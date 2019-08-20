@@ -1,6 +1,6 @@
 # RDS定时备份
 
-本脚本自动创建一个lambda以及相关资源，使得能够自动对指定RDS每隔两小时备份一次，最大保存24份备份 (48小时)。
+本脚本自动创建一个lambda以及相关资源，使得能够自动对指定RDS每隔两小时备份一次。
 
 您可以通过点击下方 **Quick Start** 链接直接进入创建页面。
 
@@ -21,7 +21,10 @@
 - 在 **指定模板** 页面上，保留模板 URL 的默认设置，然后选择 **下一步** 。
 ![](https://raw.githubusercontent.com/fanyizhe/rds-backup/master/CFN_template.png)
 
-- 在 **指定堆栈详细信息** 页面上，填写堆栈名称以及您想应用该脚本的RDS实例名称，完成后选择 **下一步**
+- 在 **指定堆栈详细信息** 页面上，填写堆栈名称、您想应用该脚本的RDS实例名称,以及您想保存最大的副本数量(最大100)，完成后选择 **下一步**
+
+    - rdsInstanceName: 您想应用该脚本的RDS实例名称
+    - MaxSnapshotNumber: 您想保存最大的副本数量(最大100)
 
 ![](https://raw.githubusercontent.com/fanyizhe/rds-backup/master/specifyInfo.png)
 
@@ -36,23 +39,11 @@
 
 ![](https://raw.githubusercontent.com/fanyizhe/rds-backup/master/create_complete.png)
 
-## （可选）自定义修改备份数量以及时间
+## （可选）自定义修改备份时间
 
-该脚本默认自动创建备份的时间为2小时，最大保存的备份数量为24。
+该脚本默认自动创建备份的时间为2小时。
 
-若您希望对最大保存的备份数量以及自动备份的时间进行自定义修改的话，可以通过修改该脚本创建的lambda函数来实现，具体操作如下：
-
-### 修改最大暂存的备份数量
-
-- 在该cloudformation的 **资源** 选项中点击类型为 **AWS::Lambda::Function** 的实体ID链接，进入该lambda函数界面。
-
-![](https://raw.githubusercontent.com/fanyizhe/rds-backup/master/CFN_lambda.png)
-
-- 在 **函数代码** 界面修改 index.py 中第三行 MAX_SNAPSHOTS 的数值，完成后点击 **保存** 。
-
-![](https://raw.githubusercontent.com/fanyizhe/rds-backup/master/lambda_code.png)
-
-### 修改自动备份的时间
+若您希望对自动备份的时间进行自定义修改的话，具体操作如下：
 
 - 在该cloudformation的 **资源** 选项中点击类型为 **AWS::Lambda::Function** 的实体ID链接，进入该lambda函数界面。
 

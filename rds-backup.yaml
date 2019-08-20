@@ -3,6 +3,10 @@ Parameters:
   rdsInstanceName:
     Type: "String"
     Description: "RDS Instance Name"
+  MaxSnapshotNumber:
+    Type: "String"
+    Description: "Maximum number of saved snapshots (1-100)"
+
 
 Resources:
   rdsBackupRole:
@@ -32,7 +36,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: 'Triggers notifier lambda every 2 hours'
-      ScheduleExpression: rate(2 hours)
+      ScheduleExpression: rate(10 minutes)
       Targets:
         - Arn: !GetAtt RdsBackupFunction.Arn
           Id: TargetFunctionV1
@@ -55,13 +59,13 @@ Resources:
         ZipFile: !Sub |
           import boto3
           import time
-          MAX_SNAPSHOTS = 24
           def lambda_handler(event, context):
               clientRDS = boto3.client('rds')
               clientSSM = boto3.client('ssm')
               db_snapshots = clientRDS.describe_db_snapshots(
                   SnapshotType='manual',
               )['DBSnapshots']
+              MAX_SNAPSHOTS = int(clientSSM.get_parameter(Name='RDSMaxSnapshotNumber')['Parameter']['Value'])
               DB_INSTANCE_NAME = clientSSM.get_parameter(Name='RDSInstanceName')['Parameter']['Value']
               if len(db_snapshots) >= MAX_SNAPSHOTS:
                   oldest_snapshot = db_snapshots[0]
@@ -79,4 +83,10 @@ Resources:
       Name: "RDSInstanceName"
       Type: "String"
       Value: !Ref rdsInstanceName
+  RDSMaxSnapshot:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "RDSMaxSnapshotNumber"
+      Type: "String"
+      Value: !Ref MaxSnapshotNumber
 

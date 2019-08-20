@@ -36,7 +36,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: 'Triggers notifier lambda every 2 hours'
-      ScheduleExpression: rate(10 minutes)
+      ScheduleExpression: rate(2 hours)
       Targets:
         - Arn: !GetAtt RdsBackupFunction.Arn
           Id: TargetFunctionV1

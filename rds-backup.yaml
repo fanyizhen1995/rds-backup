@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  rdsInstanceName:
+    Type: "String"
+    Description: "RDS Instance Name"
+
+Resources:
+  rdsBackupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Path: "/"
+      Policies: 
+        - 
+          PolicyName: "rdsbackup"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Effect: "Allow"
+                Action: ["rds:DescribeDBSnapshots","rds:CreateDBSnapshot","rds:DeleteDBSnapshot","ssm:GetParameter"]
+                Resource: "*"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  ScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: 'Triggers notifier lambda every 2 hours'
+      ScheduleExpression: rate(2 hours)
+      Targets:
+        - Arn: !GetAtt RdsBackupFunction.Arn
+          Id: TargetFunctionV1
+
+  PermissionForEventsToInvokeRdsBackupFunction:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RdsBackupFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ScheduledRule.Arn
+
+  RdsBackupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.7
+      Role: !GetAtt rdsBackupRole.Arn
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          import time
+          MAX_SNAPSHOTS = 24
+          def lambda_handler(event, context):
+              clientRDS = boto3.client('rds')
+              clientSSM = boto3.client('ssm')
+              db_snapshots = clientRDS.describe_db_snapshots(
+                  SnapshotType='manual',
+              )['DBSnapshots']
+              DB_INSTANCE_NAME = clientSSM.get_parameter(Name='RDSInstanceName')['Parameter']['Value']
+              if len(db_snapshots) >= MAX_SNAPSHOTS:
+                  oldest_snapshot = db_snapshots[0]
+                  for db_snapshot in db_snapshots:
+                      if db_snapshots[0]['SnapshotCreateTime'] > db_snapshot['SnapshotCreateTime']:
+                          oldest_snapshot = db_snapshot
+                  clientRDS.delete_db_snapshot(DBSnapshotIdentifier=oldest_snapshot['DBSnapshotIdentifier'])
+              create_snapshot = clientRDS.create_db_snapshot(
+                  DBSnapshotIdentifier=DB_INSTANCE_NAME + time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()),
+                  DBInstanceIdentifier=DB_INSTANCE_NAME
+              )
+  RDSInstanceNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "RDSInstanceName"
+      Type: "String"
+      Value: !Ref rdsInstanceName
+

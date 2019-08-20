@@ -4,7 +4,7 @@
 
 您可以通过点击下方 **Quick Start** 链接直接进入创建页面。
 
-[Quick Start](https://console.amazonaws.cn/cloudformation/home?region=cn-north-1#/stacks/new?stackName=backup-rds&templateURL=s3://quickstart-rds-backup/rds-backup.yaml) 
+[Quick Start](https://console.amazonaws.cn/cloudformation/home?region=cn-north-1#/stacks/new?stackName=backup-rds&templateURL=https://quickstart-rds-backup.s3.cn-north-1.amazonaws.com.cn/rds-backup.yaml) 
 
 ## 前提条件
 
